@@ -1,10 +1,12 @@
 import importlib
 import time
 import re
+import random
 from sys import argv
 from typing import Optional
+from pyrogram import filters, idle
 
-from TGNRobot import (
+from SophiaBot import (
     ALLOW_EXCL,
     CERT_PATH,
     DONATION_LINK,
@@ -23,11 +25,10 @@ from TGNRobot import (
     updater,
 )
 
-# needed to dynamically load modules
-# NOTE: Module order is not guaranteed, specify that in the config file!
-from TGNRobot.modules import ALL_MODULES
-from TGNRobot.modules.helper_funcs.chat_status import is_user_admin
-from TGNRobot.modules.helper_funcs.misc import paginate_modules
+from SophiaBot.modules import ALL_MODULES
+from SophiaBot.modules.helper_funcs.chat_status import is_user_admin
+from SophiaBot.modules.helper_funcs.misc import paginate_modules
+from SophiaBot.modules.sudoers import bot_sys_stats
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
 from telegram.error import (
     BadRequest,
@@ -44,8 +45,7 @@ from telegram.ext import (
     Filters,
     MessageHandler,
 )
-from telegram.ext.dispatcher import DispatcherHandlerStop, run_async
-from telegram.utils.helpers import escape_markdown
+from telegram.ext.dispatcher import DispatcherHandlerStop,UTR4E""" m telegram.utils.helpers import escape_markdown
 
 
 def get_readable_time(seconds: int) -> str:
@@ -73,45 +73,33 @@ def get_readable_time(seconds: int) -> str:
     return ping_time
 
 
-PM_START_TEXT = """
-ʜᴏɪ, ɪ ᴍ ᴛɢɴ ʀᴏʙᴏᴛ
-`ɪ'ᴍ ʜᴇʀᴇ ᴛᴏ ʜᴇʟᴘ ʏᴏᴜ ᴛᴏ ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ɢʀᴏᴜᴘꜱ ᴀɴᴅ ɪ ᴍ ᴠᴇʀʏ ᴘᴏᴡᴇʀꜰᴜʟʟ ʙᴏᴛ! ʜɪᴛ` /help
- [❤](https://telegra.ph/file/cab6825dea9263d347831.jpg)
-"""
+PM_START_TEXT = """Hey there 👋! My name is *ᴄʟᴀɴᴅᴇꜱᴛɪɴᴇ ɢʀᴏᴜᴘ ʙᴏᴛ*.\n\nI can help manage your groups with useful features, feel free to add me to your groups!."""
+
+STICKERS = (
+      "CAACAgUAAx0CWrNeBQAC8xxhaWWJYna16TZXVcOdvPS9InnhfgACrAMAAn37MVV0qkjG9l_UTR4E",
+)  
+
 
 buttons = [
     [
-        InlineKeyboardButton(
-            text="ᴀᴅᴅ ᴛɢɴ ʀᴏʙᴏᴛ ᴛᴏ ᴜʀ ᴄʜᴀᴛ", url="t.me/TGN_Ro_bot?startgroup=true"),
+        InlineKeyboardButton(text=" Commands Help ❓", callback_data="help_back"),
     ],
     [
-        InlineKeyboardButton(text="ꜱᴏᴜʀᴄᴇ 💫", url=f"https://github.com/ITZ-ZAID/TGN-Robot"),
+        InlineKeyboardButton(text="Info & About 🙋‍", callback_data="source_"),
         InlineKeyboardButton(
-            text="ꜱᴜᴘᴘᴏʀᴛ ⚡", url=f"https://t.me/{SUPPORT_CHAT}"
+                  text="System Stats 💻", callback_data="stats_callback"
         ),
-    ],
-    [
-        InlineKeyboardButton(text="ᴜᴘᴅᴀᴛᴇꜱ ☑️", url=f"https://t.me/The_Godfather_Network"),
-        InlineKeyboardButton(
-            text="ᴛɢɴ ᴄʜᴀᴛ", url=f"https://t.me/greatpersonxd"
-        ),
-    ],
-    [
-        InlineKeyboardButton(text="ʜᴇʟᴘ ᴀɴᴅ ᴄᴏᴍᴍᴀɴᴅꜱ", callback_data="help_back"),
     ],
 ]
 
-
 HELP_STRINGS = """
-`ʏᴏᴜ ᴄᴀɴ ᴄʜᴏᴏꜱᴇ ᴀɴ ᴏᴘᴛɪᴏɴ ʙᴇʟᴏᴡ, ʙʏ ᴄʟɪᴄᴋɪɴɢ ᴀ ʙᴜᴛᴛᴏɴ..`
-ᴀʟꜱᴏ ʏᴏᴜ ᴄᴀɴ ᴀꜱᴋ ᴀɴʏᴛʜɪɴɢ ɪɴ ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ [❤️](https://telegra.ph/file/cab6825dea9263d347831.jpg)"""
+✘✘✘ 𝗛𝗲𝗹𝗽𝗳𝘂𝗹 𝗖𝗼𝗺𝗺𝗮𝗻𝗱𝘀 ✘✘✘
 
-START_IMG = "https://telegra.ph/file/63d1ee18f81c92d11210e.mp4"
+Every possibility of ᴄʟᴀɴᴅᴇꜱᴛɪɴᴇ ɢʀᴏᴜᴘ ʙᴏᴛ is documentated here
+Click buttons to get help
+"""
 
-DONATE_STRING = """Heya, glad to hear you want to donate!
- You can support the project [Lucifer](t.me/detctective_de) \
- Supporting isnt always financial! [ ɴᴇᴛᴡᴏʀᴋ](https://t.me/Zaid_updates) \
- Those who cannot provide monetary support are welcome to help us develop the bot at ."""
+DONATE_STRING = """ @dihanofficial """
 
 IMPORTED = {}
 MIGRATEABLE = []
@@ -124,7 +112,7 @@ CHAT_SETTINGS = {}
 USER_SETTINGS = {}
 
 for module_name in ALL_MODULES:
-    imported_module = importlib.import_module("TGNRobot.modules." + module_name)
+    imported_module = importlib.import_module("SophiaBot.modules." + module_name)
     if not hasattr(imported_module, "__mod_name__"):
         imported_module.__mod_name__ = imported_module.__name__
 
@@ -213,22 +201,18 @@ def start(update: Update, context: CallbackContext):
                 IMPORTED["rules"].send_rules(update, args[0], from_pm=True)
 
         else:
-            first_name = update.effective_user.first_name
+            update.effective_message.reply_sticker(
+                random.choice(STICKERS),
+                timeout=60,
+            )
             update.effective_message.reply_text(
-                PM_START_TEXT.format(
-                    escape_markdown(first_name),
-                    escape_markdown(context.bot.first_name)),
+                PM_START_TEXT,
                 reply_markup=InlineKeyboardMarkup(buttons),
                 parse_mode=ParseMode.MARKDOWN,
                 timeout=60,
             )
     else:
-        update.effective_message.reply_video(
-            START_IMG, caption= "<code>Zaid is Here For You❤\nI am Awake Since</code>: <code>{}</code>".format(
-                uptime            
-            ),
-            parse_mode=ParseMode.HTML,
-        )
+        update.effective_message.reply_text("Heya, ᴄʟᴀɴᴅᴇꜱᴛɪɴᴇ ɢʀᴏᴜᴘ ʙᴏᴛ here :) PM me if you have any questions how to use me!")
 
 
 def error_handler(update, context):
@@ -355,32 +339,31 @@ def help_button(update, context):
 
 
 @run_async
-def zaid_about_callback(update, context):
+def sophia_about_callback(update, context):
     query = update.callback_query
-    if query.data == "zaid_":
+    if query.data == "sophia_":
         query.message.edit_text(
-            text=""" ℹ️ I am [TGN Robot](t.me/TGN_Ro_bot), a powerful group management bot built to help you manage your group easily.
-                 \n❍ I can restrict users.
-                 \n❍ I can greet users with customizable welcome messages and even set a group's rules.
-                 \n❍ I have an advanced anti-flood system.
-                 \n❍ I can warn users until they reach max warns, with each predefined actions such as ban, mute, kick, etc.
-                 \n❍ I have a note keeping system, blacklists, and even predetermined replies on certain keywords.
-                 \n❍ I check for admins' permissions before executing any command and more stuffs
-                 \n\n_TGN's licensed under the GNU General Public License v3.0_
-                 \n❍ Assistant @TGN\_Assistant.
-                 \nHere is the [💾Repository](https://github.com/Itsunknown-12/TGN-Robot).
-                 \n\nIf you have any question about bot, let us know at .""",
+            text=""" My name is *Sophia*, I have been written with Pyrogram and Telethon.. I'm online since 10 June 2021 and is constantly updated!
+*Bot Version: 3.0*
+\n*Bot Developers:*
+-  @dihanrandila
+-  @InukaASiTH
+\n* Updates Channel:* @SophiaUpdates
+* Support Chat:* @SophiaSupport_Official
+                 \n\n* And finally special thanks of gratitude to all my users who relied on me for managing their groups, I hope you will always like me; My developers are constantly working to improve me!
+                 \n\n *Licensed under the GNU Affero General Public Lisence v3.0*
+                 \n© 2020 - 2021 @SophiaSLBot. All Rights Reserved """,
             parse_mode=ParseMode.MARKDOWN,
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup(
                 [
                  [
-                    InlineKeyboardButton(text="Back", callback_data="zaid_back")
+                    InlineKeyboardButton(text="Back", callback_data="sophia_back")
                  ]
                 ]
             ),
         )
-    elif query.data == "zaid_back":
+    elif query.data == "sophia_back":
         query.message.edit_text(
                 PM_START_TEXT,
                 reply_markup=InlineKeyboardMarkup(buttons),
@@ -389,24 +372,138 @@ def zaid_about_callback(update, context):
                 disable_web_page_preview=False,
         )
 
+        
 
+    elif query.data == "sophia_basichelp":
+        query.message.edit_text(
+            text=f"*Here's basic Help regarding* *How to use Me?*"
+            f"\n\n• Firstly Add {dispatcher.bot.first_name} to your group by pressing [here](http://t.me/{dispatcher.bot.username}?startgroup=true)\n"
+            f"\n• After adding promote me manually with full rights for faster experience.\n"
+            f"\n• Than send `/admincache@SophiaSLBot` in that chat to refresh admin list in My database.\n"
+            f"\n\n*All done now use below given button's to know about use!*\n"
+            f"",
+            parse_mode=ParseMode.MARKDOWN,
+            disable_web_page_preview=True,
+            reply_markup=InlineKeyboardMarkup(
+                [
+                 [
+                    InlineKeyboardButton(text="Admins 👮‍♂️", callback_data="sophia_admin"),
+                    InlineKeyboardButton(text="Notes 📑", callback_data="sophia_notes"),
+                 ],
+                 [
+                    InlineKeyboardButton(text="Support 👨‍🔧", callback_data="sophia_support"),
+                    InlineKeyboardButton(text="Credits 👨‍💻", callback_data="sophia_credit"),
+                 ],
+                 [
+                    InlineKeyboardButton(text="Back", callback_data="source_"),
+                 
+                 ]
+                ]
+            ),
+        )
+
+    elif query.data == "sophia_admin":
+        query.message.edit_text(
+            text=f"*Let's make your group bit effective now*"
+            f"\nCongragulations, *Sophia* now ready to manage your group."
+            f"\n\n*Admin Tools*"
+            f"\nBasic Admin tools help you to protect and powerup your group."
+            f"\nYou can ban members, Kick members, Promote someone as admin through commands of bot."
+            f"\n\n*Welcome*"
+            f"\nLets set a welcome message to welcome new users coming to your group."
+            f"send `/setwelcome [message]` to set a welcome message!",
+            parse_mode=ParseMode.MARKDOWN,
+            disable_web_page_preview=True,
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton(text="Back", callback_data="sophia_basichelp")]]
+            ),
+        )
+
+    elif query.data == "sophia_notes":
+        query.message.edit_text(
+            text=f"<b> Setting up notes</b>"
+            f"\nYou can save message/media/audio or anything as notes"
+            f"\nto get a note simply use # at the beginning of a word"
+            f"\n\nYou can also set buttons for notes and filters (refer help menu)",
+            parse_mode=ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton(text="Back", callback_data="sophia_basichelp")]]
+            ),
+        )
+    elif query.data == "sophia_support":
+        query.message.edit_text(
+            text="* Sophia's Updates News & Supports*"
+            "\nJoin Support Group & Updates Channel",
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=InlineKeyboardMarkup(
+                [
+                 [
+                    InlineKeyboardButton(text="Support Group", url="t.me/dihan_official"),
+                    InlineKeyboardButton(text="Updates Channel", url="t.me/dihanofficial"),
+                 ],
+                 [
+                    InlineKeyboardButton(text="Back", callback_data="sophia_basichelp"),
+                 
+                 ]
+                ]
+            ),
+        )
+    elif query.data == "sophia_credit":
+        query.message.edit_text(
+            text=f"*Credit For Sophia's Devs*\n"
+            f"\nHere Some Developers Helping in Making The Sophia Bot",
+            parse_mode=ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup(
+                [
+                 [
+                    InlineKeyboardButton(text="Dihan", url="t.me/dihanrandila"),
+                    InlineKeyboardButton(text="Inuka", url="t.me/InukaASiTH"),
+                 ],
+                 [
+                    InlineKeyboardButton(text="Back", callback_data="sophia_basichelp"),
+                 
+                 ]
+                ]
+            ),
+        )
+
+
+ 
+@pbot.on_callback_query(filters.regex("stats_callback"))
+async def stats_callbacc(_, CallbackQuery):
+    text = await bot_sys_stats()
+    await pbot.answer_callback_query(CallbackQuery.id, text, show_alert=True)
+    
+    
 @run_async
 def Source_about_callback(update, context):
     query = update.callback_query
     if query.data == "source_":
         query.message.edit_text(
-            text=""" Hi..🤗 I am [Robot](t.me/TGN_Ro_Bot)
-                 \nHere is the [Source Code](https://github.com/Itsunknown-12/TGN-Robot) .""",
+            text="""Info & About 
+                 \nClick buttons for help""",
             parse_mode=ParseMode.MARKDOWN,
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup(
                 [
+                  [
+                    InlineKeyboardButton(text="🙋‍♀️ About Me", callback_data="sophia_"),
+                    InlineKeyboardButton(text="❓ Basic Help", callback_data="sophia_basichelp"),
+                  ],
+                  [
+                    InlineKeyboardButton(text=" Special Credits ❤ ", url=f"https://telegra.ph/Special-Credits-08-21"),
+                    InlineKeyboardButton(text="Terms And Conditions 📄 ", url=f"https://telegra.ph/Terms-and-Conditions-08-21"),
+                  ],
+                  [
+                    InlineKeyboardButton(text="💾 Source Code", url=f"https://github.com/dihanofficial/SophiaBot"),
+                 ],
                  [
                     InlineKeyboardButton(text="Go Back", callback_data="source_back")
                  ]
                 ]
             ),
         )
+
     elif query.data == "source_back":
         query.message.edit_text(
                 PM_START_TEXT,
@@ -415,6 +512,9 @@ def Source_about_callback(update, context):
                 timeout=60,
                 disable_web_page_preview=False,
         )
+
+
+# Speacial creadit for me  dont edit 
 
 @run_async
 def get_help(update: Update, context: CallbackContext):
@@ -447,7 +547,7 @@ def get_help(update: Update, context: CallbackContext):
                 [
                     [
                         InlineKeyboardButton(
-                            text="Help",
+                            text="Click me for help!",
                             url="t.me/{}?start=help".format(context.bot.username),
                         )
                     ]
@@ -617,7 +717,7 @@ def get_settings(update: Update, context: CallbackContext):
                     [
                         [
                             InlineKeyboardButton(
-                                text="Settings",
+                                text="⚙ Settings ⚙",
                                 url="t.me/{}?start=stngs_{}".format(
                                     context.bot.username, chat.id
                                 ),
@@ -643,7 +743,7 @@ def donate(update: Update, context: CallbackContext):
             DONATE_STRING, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True
         )
 
-        if OWNER_ID != 412094015 and DONATION_LINK:
+        if OWNER_ID != 254318997 and DONATION_LINK:
             update.effective_message.reply_text(
                 "You can also donate to the person currently running me "
                 "[here]({})".format(DONATION_LINK),
@@ -691,10 +791,10 @@ def main():
 
     if SUPPORT_CHAT is not None and isinstance(SUPPORT_CHAT, str):
         try:
-            dispatcher.bot.sendMessage(f"@{SUPPORT_CHAT}", "Yes I'm alive 😹")
+            dispatcher.bot.sendMessage(f"@{SUPPORT_CHAT}", "I'm Online Now! 💫 ")
         except Unauthorized:
             LOGGER.warning(
-                "Bot isnt able to send message to support_chat, go and check!"
+                "Bot isnt able to send message to @SophiaSupport_Official, go and check!"
             )
         except BadRequest as e:
             LOGGER.warning(e.message)
@@ -708,7 +808,7 @@ def main():
     settings_handler = CommandHandler("settings", get_settings)
     settings_callback_handler = CallbackQueryHandler(settings_button, pattern=r"stngs_")
 
-    about_callback_handler = CallbackQueryHandler(zaid_about_callback, pattern=r"zaid_")
+    about_callback_handler = CallbackQueryHandler(sophia_about_callback, pattern=r"sophia_")
     source_callback_handler = CallbackQueryHandler(Source_about_callback, pattern=r"source_")
 
     donate_handler = CommandHandler("donate", donate)
